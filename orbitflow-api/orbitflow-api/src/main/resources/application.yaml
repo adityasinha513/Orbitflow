@@ -18,3 +18,22 @@ spring:
     properties:
       hibernate:
         format_sql: true
+
+orbitflow:
+  redis:
+    address: redis://localhost:6379
+
+  security:
+    jwt:
+      # Dev-only default - override via JWT_SECRET in any shared/deployed environment.
+      secret: ${JWT_SECRET:orbitflow-local-dev-secret-change-me-please-32bytes-min}
+      expiration-minutes: 60
+    seed:
+      admin-username: ${ORBITFLOW_ADMIN_USERNAME:admin}
+      admin-password: ${ORBITFLOW_ADMIN_PASSWORD:admin123}
+      demo-api-key: ${ORBITFLOW_DEMO_API_KEY:orbitflow_demo_key_12345}
+      demo-tenant: ${ORBITFLOW_DEMO_TENANT:acme-payments}
+
+  rate-limit:
+    runs-per-window: 20
+    window-seconds: 10

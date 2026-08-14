@@ -50,6 +50,9 @@ public class JobRun {
     @Column(name = "input_payload")
     private String inputPayload;
 
+    @Column(name = "submitted_by")
+    private String submittedBy;
+
     @Column(name = "started_at")
     private Instant startedAt;
 

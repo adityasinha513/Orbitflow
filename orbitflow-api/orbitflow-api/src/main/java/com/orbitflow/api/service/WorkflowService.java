@@ -2,10 +2,14 @@ package com.orbitflow.api.service;
 
 import com.orbitflow.api.dto.request.CreateWorkflowRequest;
 import com.orbitflow.api.dto.request.StepDefinitionRequest;
+import com.orbitflow.api.dto.response.RunSummaryResponse;
+import com.orbitflow.api.dto.response.WorkflowSummaryResponse;
+import com.orbitflow.api.entity.JobRun;
 import com.orbitflow.api.entity.Workflow;
 import com.orbitflow.api.entity.WorkflowStepDefinition;
 import com.orbitflow.api.exception.WorkflowAlreadyExistsException;
 import com.orbitflow.api.exception.WorkflowNotFoundException;
+import com.orbitflow.api.repository.JobRunRepository;
 import com.orbitflow.api.repository.WorkflowRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,6 +23,7 @@ import java.util.List;
 public class WorkflowService {
 
     private final WorkflowRepository workflowRepository;
+    private final JobRunRepository jobRunRepository;
     private final DagResolutionService dagResolutionService;
 
     @Transactional
@@ -43,6 +48,32 @@ public class WorkflowService {
     public Workflow getByName(String name) {
         return workflowRepository.findByName(name)
             .orElseThrow(() -> new WorkflowNotFoundException("workflow '%s' not found".formatted(name)));
+    }
+
+    @Transactional(readOnly = true)
+    public List<WorkflowSummaryResponse> listWorkflowSummaries() {
+        return workflowRepository.findAll().stream()
+            .map(this::toSummary)
+            .toList();
+    }
+
+    private WorkflowSummaryResponse toSummary(Workflow workflow) {
+        RunSummaryResponse lastRun = jobRunRepository.findTopByWorkflowIdOrderByStartedAtDesc(workflow.getId())
+            .map(run -> toRunSummary(workflow.getName(), run))
+            .orElse(null);
+
+        return new WorkflowSummaryResponse(
+            workflow.getId(),
+            workflow.getName(),
+            workflow.getCreatedAt(),
+            workflow.getSteps().stream().map(WorkflowStepDefinition::getStepName).toList(),
+            lastRun
+        );
+    }
+
+    private RunSummaryResponse toRunSummary(String workflowName, JobRun run) {
+        return new RunSummaryResponse(
+            run.getId(), workflowName, run.getStatus(), run.getSubmittedBy(), run.getStartedAt(), run.getCompletedAt());
     }
 
     private WorkflowStepDefinition toDefinition(Workflow workflow, StepDefinitionRequest step) {

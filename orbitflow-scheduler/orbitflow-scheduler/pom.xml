@@ -48,6 +48,15 @@
 			<artifactId>jackson-databind</artifactId>
 		</dependency>
 
+		<!-- Plain client, not redisson-spring-boot-starter: on Boot 4.1's autoconfiguration is
+		     new enough that relying on a third-party starter's autoconfig is a real risk (already
+		     hit this with RestClient.Builder in the worker) - an explicit @Bean sidesteps it. -->
+		<dependency>
+			<groupId>org.redisson</groupId>
+			<artifactId>redisson</artifactId>
+			<version>3.37.0</version>
+		</dependency>
+
 		<dependency>
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>

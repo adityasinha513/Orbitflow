@@ -37,5 +37,11 @@ spring:
         spring.json.add.type.headers: false
 
 orbitflow:
+  redis:
+    address: redis://localhost:6379
   scheduler:
     poll-interval-ms: 2000
+    instance-id: ${SCHEDULER_INSTANCE_ID:scheduler-1}
+    lock:
+      wait-time-ms: 0
+      lease-time-ms: 10000

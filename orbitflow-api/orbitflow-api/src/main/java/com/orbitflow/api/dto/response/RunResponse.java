@@ -10,6 +10,7 @@ public record RunResponse(
     UUID runId,
     String workflowName,
     RunStatus status,
+    String submittedBy,
     Instant startedAt,
     Instant completedAt,
     List<StepStatusResponse> steps
