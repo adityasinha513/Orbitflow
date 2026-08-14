@@ -1,0 +1,46 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: orbitflow-worker
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/orbitflow
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:root}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      # orbitflow-api owns schema creation/migration; this service only reads/writes existing tables.
+      ddl-auto: none
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: orbitflow-worker
+      auto-offset-reset: earliest
+      # Worker now listens to two differently-shaped topics (step.ready, step.failed).
+      # Rather than juggling a typed JsonDeserializer per topic, consume raw JSON and parse
+      # out just the fields each listener needs - see StepReadyConsumer/StepFailedConsumer.
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+
+orbitflow:
+  worker:
+    webhook-timeout-ms: 5000
+    instance-id: ${WORKER_INSTANCE_ID:worker-1}
+    retry:
+      max-attempts: 5
+      initial-backoff-ms: 1000
+      backoff-multiplier: 2.0

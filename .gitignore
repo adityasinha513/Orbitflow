@@ -1,0 +1,6 @@
+# Claude Code / editor session state
+.claude/
+
+# OS junk
+.DS_Store
+Thumbs.db

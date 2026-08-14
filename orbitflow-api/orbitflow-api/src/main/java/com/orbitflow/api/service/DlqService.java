@@ -1,0 +1,47 @@
+package com.orbitflow.api.service;
+
+import com.orbitflow.api.entity.JobRun;
+import com.orbitflow.api.entity.JobStep;
+import com.orbitflow.api.entity.RunStatus;
+import com.orbitflow.api.entity.StepStatus;
+import com.orbitflow.api.exception.InvalidStepStateException;
+import com.orbitflow.api.exception.StepNotFoundException;
+import com.orbitflow.api.repository.JobRunRepository;
+import com.orbitflow.api.repository.JobStepRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.UUID;
+
+@Service
+@RequiredArgsConstructor
+public class DlqService {
+
+    private final JobStepRepository jobStepRepository;
+    private final JobRunRepository jobRunRepository;
+
+    @Transactional
+    public JobStep replay(UUID stepId) {
+        JobStep step = jobStepRepository.findById(stepId)
+            .orElseThrow(() -> new StepNotFoundException("step '%s' not found".formatted(stepId)));
+
+        if (step.getStatus() != StepStatus.DEAD_LETTER) {
+            throw new InvalidStepStateException(
+                "step '%s' is %s, not dead-lettered".formatted(step.getStepName(), step.getStatus()));
+        }
+
+        step.setStatus(StepStatus.PENDING);
+        step.setAttemptCount(0);
+        jobStepRepository.save(step);
+
+        // Its dependencies already completed once, so PENDING is enough - the scheduler's
+        // poll will pick it straight back up as READY without needing dependency re-checks here.
+        JobRun run = step.getJobRun();
+        run.setStatus(RunStatus.RUNNING);
+        run.setCompletedAt(null);
+        jobRunRepository.save(run);
+
+        return step;
+    }
+}
